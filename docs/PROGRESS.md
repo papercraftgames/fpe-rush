@@ -37,19 +37,31 @@ Games repository transfer.
 - Added visible "Try this" guidance for all 16 demos, a control reference card,
   keyboard gallery toggling, and catalog validation for per-demo interaction
   prompts.
+- Fixed the gallery panel for browser viewports by enabling expanded stretch,
+  reducing the close control, making the detail column scroll vertically, and
+  keeping activation controls visible above metadata.
+- Added per-demo explanation copy that states what each entry demonstrates, how
+  FPE uses exported Blender/GLB metadata to do it, and the exact repository path
+  for the demo artifact.
 
 ## Session Handoff
 
 - Date: June 7, 2026
 - Branch: `main`
 - Implementation commit: `e0a4a8d` (`Polish gallery UI and demo presentation`)
-- Local uncommitted polish: demo guidance/control pass in `scripts/main.gd`,
-  `scripts/demo_catalog.gd`, and `scripts/validate_project.gd`.
+- Local uncommitted polish: demo guidance/control pass, per-demo FPE
+  explanations and repository links, catalog validation in
+  `scripts/validate_project.gd`, and responsive web layout fixes in
+  `project.godot`.
 - Verified: `./scripts/build_demos.sh`, `./scripts/ci/check.sh`, native 1280x720
   viewport captures with the gallery open and closed, repository transfer, and
   retained GitHub Pages configuration. Deployment run `27103113677` succeeded
   from `papercraftgames/fpe-rush`. Re-ran `./scripts/ci/check.sh` after the
-  local guidance/control pass.
+  local guidance/control pass, after the responsive gallery layout fix, and
+  after adding explanation/link validation. Served `build/web` locally and
+  smoke-tested the exported browser UI with no console errors; the explanation
+  panel, action controls, repo button, and metadata repo path are reachable in
+  the scrollable detail column.
 
 ## Next Action
 
@@ -59,4 +71,5 @@ focused issues for any remaining per-demo visual or input polish.
 ## Known Risks
 
 - Browser interaction across all 16 demos remains the final production smoke
-  test; the native visual capture covered the initial scene and gallery states.
+  test; the exported browser smoke test covered the initial scene, gallery
+  layout, explanation content, and first-demo repo link placement.

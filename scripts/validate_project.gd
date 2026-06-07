@@ -24,7 +24,7 @@ func _validate_catalog() -> bool:
 		ok = false
 	var seen := {}
 	for demo in Catalog.DEMOS:
-		for key in ["id", "number", "title", "concept", "blurb", "try_it", "event", "metadata"]:
+		for key in ["id", "number", "title", "concept", "blurb", "explanation", "try_it", "event", "metadata", "repo_path"]:
 			if not demo.has(key) or str(demo[key]).is_empty():
 				push_error("Demo is missing %s: %s" % [key, demo])
 				ok = false
@@ -32,6 +32,14 @@ func _validate_catalog() -> bool:
 			push_error("Duplicate demo id: %s" % demo.id)
 			ok = false
 		seen[demo.id] = true
+		var repo_resource_path := "res://%s" % demo.repo_path
+		if not FileAccess.file_exists(repo_resource_path):
+			push_error("Demo repo_path does not map to a local file: %s" % demo.repo_path)
+			ok = false
+		var repo_url := Catalog.repo_url(demo)
+		if not repo_url.begins_with(Catalog.REPO_BASE_URL):
+			push_error("Demo repo URL is outside the configured repository: %s" % repo_url)
+			ok = false
 	return ok
 
 func _validate_main_scene() -> bool:

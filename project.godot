@@ -16,6 +16,7 @@ window/size/viewport_height=720
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [rendering]
 
@@ -27,4 +28,3 @@ environment/defaults/default_clear_color=Color(0.925, 0.878, 0.776, 1)
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/folded_paper_engine/plugin.cfg")
-
