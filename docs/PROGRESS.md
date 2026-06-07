@@ -60,11 +60,13 @@ implemented locally.
 ## Session Handoff
 
 - Date: June 7, 2026
-- Branch: `main`
+- Branch: `codex/polish-playable-demos`
 - Base commit: `826e3cb` (`UI Fixes`)
-- Local uncommitted work: regenerated all Blender/GLB scenes with players,
-  containment rails, interaction pedestals, and layered papercraft styling;
-  updated gallery/play HUD copy and validation.
+- Implementation commit: `e7deb45` (`Polish playable demo scenes`)
+- Draft PR: <https://github.com/papercraftgames/fpe-rush/pull/1>
+- Work committed: regenerated all Blender/GLB scenes with players, containment
+  rails, interaction pedestals, and layered papercraft styling; updated
+  gallery/play HUD copy and validation.
 - Verified: `./scripts/build_demos.sh`; `./scripts/ci/check.sh` including Godot
   import/parsing, all 16 catalog entries, all GLBs, FPE runtime player loading,
   boundary checks, and web export; Godot movie-frame capture at 1280x720 after
