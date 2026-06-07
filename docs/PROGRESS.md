@@ -2,8 +2,8 @@
 
 ## Current Milestone
 
-The first usability polish pass is implemented locally after the Papercraft
-Games repository transfer.
+The cross-demo player, interaction, containment, and visual polish pass is
+implemented locally.
 
 ## Completed
 
@@ -43,33 +43,42 @@ Games repository transfer.
 - Added per-demo explanation copy that states what each entry demonstrates, how
   FPE uses exported Blender/GLB metadata to do it, and the exact repository path
   for the demo artifact.
+- Added an authored standard-mode FPE paper player to all 16 primary demos.
+- Added raised collision rails around every demo floor and expanded the staged
+  play area so players and rigid objects remain contained.
+- Added in-world interaction pedestals for event-driven demos that previously
+  depended on the gallery Activate button, including speakers, cameras,
+  animations, groups, sub-scenes, and frame events.
+- Reworked generated scenes with layered paper floors, folded corners, inset
+  mats, paper scraps, varied materials, softer calibrated lighting, and a
+  constructed papercraft player silhouette.
+- Added a play-mode HUD with per-demo interaction guidance and fixed the gallery
+  close button so it remains a compact circular control.
+- Extended static and runtime validation to require a standard-mode player and
+  four boundary rails in every primary demo.
 
 ## Session Handoff
 
 - Date: June 7, 2026
 - Branch: `main`
-- Implementation commit: `e0a4a8d` (`Polish gallery UI and demo presentation`)
-- Local uncommitted polish: demo guidance/control pass, per-demo FPE
-  explanations and repository links, catalog validation in
-  `scripts/validate_project.gd`, and responsive web layout fixes in
-  `project.godot`.
-- Verified: `./scripts/build_demos.sh`, `./scripts/ci/check.sh`, native 1280x720
-  viewport captures with the gallery open and closed, repository transfer, and
-  retained GitHub Pages configuration. Deployment run `27103113677` succeeded
-  from `papercraftgames/fpe-rush`. Re-ran `./scripts/ci/check.sh` after the
-  local guidance/control pass, after the responsive gallery layout fix, and
-  after adding explanation/link validation. Served `build/web` locally and
-  smoke-tested the exported browser UI with no console errors; the explanation
-  panel, action controls, repo button, and metadata repo path are reachable in
-  the scrollable detail column.
+- Base commit: `826e3cb` (`UI Fixes`)
+- Local uncommitted work: regenerated all Blender/GLB scenes with players,
+  containment rails, interaction pedestals, and layered papercraft styling;
+  updated gallery/play HUD copy and validation.
+- Verified: `./scripts/build_demos.sh`; `./scripts/ci/check.sh` including Godot
+  import/parsing, all 16 catalog entries, all GLBs, FPE runtime player loading,
+  boundary checks, and web export; Godot movie-frame capture at 1280x720 after
+  correcting GLTF light overexposure. The in-app browser surface was unavailable
+  in this session, so visual QA used Godot's renderer directly.
 
 ## Next Action
 
-Run a browser interaction pass across all 16 demos after deployment and open
-focused issues for any remaining per-demo visual or input polish.
+Commit and push this coherent polish pass, then run a production browser
+interaction pass across all 16 demos after deployment.
 
 ## Known Risks
 
 - Browser interaction across all 16 demos remains the final production smoke
-  test; the exported browser smoke test covered the initial scene, gallery
-  layout, explanation content, and first-demo repo link placement.
+  test because the in-app browser connector was unavailable during this pass.
+- Godot reports known renderer/resource cleanup warnings at process exit; the CI
+  wrapper filters those existing warnings and all project validation checks pass.

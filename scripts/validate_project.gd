@@ -24,7 +24,7 @@ func _validate_catalog() -> bool:
 		ok = false
 	var seen := {}
 	for demo in Catalog.DEMOS:
-		for key in ["id", "number", "title", "concept", "blurb", "explanation", "try_it", "event", "metadata", "repo_path"]:
+		for key in ["id", "number", "title", "concept", "blurb", "explanation", "try_it", "play_hint", "event", "metadata", "repo_path"]:
 			if not demo.has(key) or str(demo[key]).is_empty():
 				push_error("Demo is missing %s: %s" % [key, demo])
 				ok = false
@@ -79,6 +79,18 @@ func _validate_glbs() -> bool:
 		if not _has_any_fpe_object_metadata(instance):
 			push_error("No child FPE object metadata found in %s." % path)
 			ok = false
+		var player: Node = _find_fpe_player(instance)
+		if player == null:
+			push_error("No FPE player found in %s." % path)
+			ok = false
+		else:
+			var player_controls: Dictionary = UserDataUtils.get_user_data(player).get("fpe_player_controls_context_props", {})
+			if player_controls.get("FirstPerson", 0.0) or player_controls.get("ThirdPerson", 0.0):
+				push_error("Default player must use standard papercraft controls in %s." % path)
+				ok = false
+		if _count_boundary_nodes(instance) < 4:
+			push_error("Expected four collision boundary rails in %s." % path)
+			ok = false
 		instance.free()
 	return ok
 
@@ -91,6 +103,25 @@ func _has_any_fpe_object_metadata(node: Node) -> bool:
 		if _has_any_fpe_object_metadata(child):
 			return true
 	return false
+
+func _find_fpe_player(node: Node) -> Node:
+	var object_config: Dictionary = UserDataUtils.get_user_data(node).get("fpe_context_props", {})
+	if object_config is Dictionary and object_config.get("Player", 0.0):
+		return node
+	for child in node.get_children():
+		var player: Node = _find_fpe_player(child)
+		if player:
+			return player
+	return null
+
+func _count_boundary_nodes(node: Node) -> int:
+	var count := 0
+	var object_config: Dictionary = UserDataUtils.get_user_data(node).get("fpe_context_props", {})
+	if object_config is Dictionary and "level_boundary" in str(object_config.get("Groups", "")):
+		count += 1
+	for child in node.get_children():
+		count += _count_boundary_nodes(child)
+	return count
 
 func _validate_fpe_runtime() -> bool:
 	var ok := true
@@ -117,6 +148,9 @@ func _validate_fpe_runtime() -> bool:
 			ok = false
 		elif feature_utils.FPE_GLOBALS.SCENE_CAMERAS.is_empty():
 			push_error("FPE found no cameras for %s." % demo.id)
+			ok = false
+		elif feature_utils.FPE_GLOBALS.PLAYER_LIST.is_empty():
+			push_error("FPE found no player for %s." % demo.id)
 			ok = false
 		GLTFModelUtils.clear_scene(feature_utils, stage, true)
 		await process_frame
