@@ -84,6 +84,15 @@ def material(
     return mat
 
 
+def shade(color: tuple[float, float, float, float], factor: float) -> tuple[float, float, float, float]:
+    return (
+        max(0.0, min(1.0, color[0] * factor)),
+        max(0.0, min(1.0, color[1] * factor)),
+        max(0.0, min(1.0, color[2] * factor)),
+        color[3],
+    )
+
+
 def soften(obj: bpy.types.Object, width: float = 0.06, segments: int = 3) -> None:
     modifier = obj.modifiers.new("Soft paper edges", "BEVEL")
     modifier.width = width
@@ -119,6 +128,15 @@ def cylinder(name: str, loc: tuple[float, float, float], radius: float, depth: f
     return obj
 
 
+def cone(name: str, loc: tuple[float, float, float], radius1: float, radius2: float, depth: float, mat: bpy.types.Material) -> bpy.types.Object:
+    bpy.ops.mesh.primitive_cone_add(vertices=5, radius1=radius1, radius2=radius2, depth=depth, location=loc)
+    obj = bpy.context.object
+    obj.name = name
+    obj.data.materials.append(mat)
+    soften(obj, 0.025, 2)
+    return obj
+
+
 def add_camera(name: str, position: tuple[float, float, float], target: tuple[float, float, float], lens: float = 30.0) -> bpy.types.Object:
     bpy.ops.object.camera_add(location=position)
     cam = bpy.context.object
@@ -144,6 +162,19 @@ def add_text(name: str, text: str, loc: tuple[float, float, float], mat: bpy.typ
     return obj
 
 
+def add_interaction_pedestal(materials: dict[str, bpy.types.Material], label: str = "press E") -> bpy.types.Object:
+    base = cube("ActionPedestalTrigger", (-1.42, -0.12, 0.25), (0.42, 0.42, 0.18), materials["paper_mid"])
+    top = cylinder("ActionPedestalButton", (-1.42, -0.12, 0.54), 0.24, 0.16, materials["accent"])
+    top.rotation_euler.z = math.radians(18)
+    add_text("ActionPedestalLabel", label, (-1.42, -0.74, 0.09), materials["ink"], 0.13)
+    base["fpe_context_props"] = {"Trigger": 1.0, "Groups": "demo_action"}
+    base["fpe_trigger_events_context_props"] = {
+        "TriggerGroups": "player",
+        "TriggerEvents": [{"TriggerType": 2.0, "EventName": "ActivateDemo"}],
+    }
+    return base
+
+
 def add_scene_props(demo_id: str, title: str, accent: tuple[float, float, float, float], commands: dict) -> None:
     scene = bpy.context.scene
     scene["fpe_scene_context_props"] = {
@@ -165,8 +196,11 @@ def add_scene_props(demo_id: str, title: str, accent: tuple[float, float, float,
 
 def add_base(title: str, accent: tuple[float, float, float, float]) -> dict[str, bpy.types.Object]:
     paper = material("warm_paper", (0.96, 0.90, 0.78, 1.0), 0.92)
+    paper_mid = material("paper_midtone", (0.88, 0.80, 0.66, 1.0), 0.94)
+    paper_light = material("paper_highlight", (1.0, 0.96, 0.86, 1.0), 0.9)
     ink = material("soft_ink", (0.28, 0.22, 0.18, 1.0), 0.86)
     accent_mat = material("accent", accent, 0.68)
+    accent_light = material("accent_light", shade(accent, 1.18), 0.72)
     accent_dark = material(
         "accent_dark",
         (accent[0] * 0.62, accent[1] * 0.62, accent[2] * 0.62, 1.0),
@@ -174,21 +208,41 @@ def add_base(title: str, accent: tuple[float, float, float, float]) -> dict[str,
     )
     shadow = material("shadow_card", (0.38, 0.29, 0.24, 1.0), 0.88)
     gold = material("warm_brass", (0.72, 0.48, 0.20, 1.0), 0.38, 0.28)
-    ground = cube("PaperFloor-col", (0, 0, -0.08), (5.2, 3.3, 0.08), paper)
+    ground = cube("PaperFloor-col", (0, 0, -0.08), (6.4, 4.1, 0.08), paper)
     ground["fpe_context_props"] = {"Groups": "floor,collidable"}
-    cube("BackCard", (0, 1.82, 1.06), (4.8, 0.08, 1.08), accent_dark)
-    cube("StageMat", (0, 0.15, 0.015), (2.45, 1.65, 0.025), shadow)
-    for x in (-3.9, 3.9):
+    ground["fpe_physics_context_props"] = {"Friction": 0.85}
+    cube("FloorLayerInset", (0.0, -0.04, 0.005), (5.88, 3.55, 0.025), paper_light)
+    cube("FoldedCornerNE", (2.72, 1.55, 0.055), (0.42, 0.42, 0.025), paper_mid).rotation_euler.z = math.radians(45)
+    cube("FoldedCornerSW", (-2.72, -1.85, 0.055), (0.36, 0.36, 0.025), paper_mid).rotation_euler.z = math.radians(45)
+
+    wall_specs = [
+        ("NorthRail-col", (0, 2.16, 0.24), (6.55, 0.12, 0.32)),
+        ("SouthRail-col", (0, -2.16, 0.24), (6.55, 0.12, 0.32)),
+        ("WestRail-col", (-3.34, 0, 0.24), (0.12, 4.2, 0.32)),
+        ("EastRail-col", (3.34, 0, 0.24), (0.12, 4.2, 0.32)),
+    ]
+    for wall_name, wall_loc, wall_scale in wall_specs:
+        wall = cube(wall_name, wall_loc, wall_scale, accent_dark)
+        wall["fpe_context_props"] = {"Groups": "level_boundary,collidable"}
+        wall["fpe_physics_context_props"] = {"Friction": 0.7}
+
+    cube("BackCard", (0, 1.92, 1.12), (5.55, 0.08, 1.16), accent_dark)
+    cube("StageMat", (0, 0.08, 0.045), (3.05, 1.9, 0.025), shadow)
+    cube("StageMatHighlight", (0.22, 0.26, 0.075), (2.45, 1.25, 0.018), accent_light)
+    for x in (-2.92, 2.92):
         cylinder("PaperLantern", (x, 1.5, 1.45), 0.18, 1.65, accent_mat)
         sphere("LanternGlow", (x, 1.42, 2.2), 0.24, gold)
     for x in (-3.1, 3.1):
         cylinder("CardConfetti", (x, 0.85, 0.12), 0.13, 0.12, accent_mat)
+    for i, x in enumerate([-2.1, -0.7, 0.7, 2.1]):
+        scrap = cube(f"PaperScrap{i+1}", (x, -1.62 + 0.18 * (i % 2), 0.08), (0.22, 0.06, 0.012), accent_light if i % 2 else paper_mid)
+        scrap.rotation_euler.z = math.radians(14 - i * 11)
     add_text("TitleLabel", title, (0, 1.68, 1.86), ink, 0.24)
-    add_camera("OverviewCamera", (0, -6.8, 3.5), (0, 0.18, 0.72), 24.0)
+    add_camera("OverviewCamera", (0, -7.2, 3.9), (0, 0.08, 0.78), 24.0)
     bpy.ops.object.light_add(type="POINT", location=(-2.8, -2.2, 4.4))
     key = bpy.context.object
     key.name = "WarmKey"
-    key.data.energy = 0.024
+    key.data.energy = 0.032
     key.data.color = (1.0, 0.74, 0.52)
     key.data.shadow_soft_size = 2.2
     key.data.use_custom_distance = True
@@ -196,7 +250,7 @@ def add_base(title: str, accent: tuple[float, float, float, float]) -> dict[str,
     bpy.ops.object.light_add(type="POINT", location=(3.3, 0.2, 3.0))
     fill = bpy.context.object
     fill.name = "CoolFill"
-    fill.data.energy = 0.012
+    fill.data.energy = 0.014
     fill.data.color = (0.56, 0.72, 1.0)
     fill.data.shadow_soft_size = 1.8
     fill.data.use_custom_distance = True
@@ -204,7 +258,7 @@ def add_base(title: str, accent: tuple[float, float, float, float]) -> dict[str,
     bpy.ops.object.light_add(type="POINT", location=(0, 0.8, 2.4))
     glow = bpy.context.object
     glow.name = "StageGlow"
-    glow.data.energy = 0.006
+    glow.data.energy = 0.008
     glow.data.color = accent[:3]
     glow.data.shadow_soft_size = 2.0
     glow.data.use_custom_distance = True
@@ -220,8 +274,11 @@ def add_base(title: str, accent: tuple[float, float, float, float]) -> dict[str,
     world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.28
     return {
         "paper": paper,
+        "paper_mid": paper_mid,
+        "paper_light": paper_light,
         "ink": ink,
         "accent": accent_mat,
+        "accent_light": accent_light,
         "accent_dark": accent_dark,
         "gold": gold,
         "shadow": shadow,
@@ -230,21 +287,33 @@ def add_base(title: str, accent: tuple[float, float, float, float]) -> dict[str,
 
 
 def add_player(materials: dict[str, bpy.types.Material]) -> bpy.types.Object:
-    player = sphere("FpeRushPlayer", (-1.9, -0.9, 0.45), 0.34, materials["accent"])
+    player = cone("FpeRushPlayer", (-2.35, -1.15, 0.43), 0.32, 0.22, 0.64, materials["accent"])
+    head = sphere("PlayerFoldedHead", (-2.35, -1.15, 0.86), 0.23, materials["paper_light"])
+    scarf = cube("PlayerScarf", (-2.35, -1.36, 0.68), (0.28, 0.06, 0.07), materials["accent_dark"])
+    nose = cone("PlayerPointer", (-2.35, -1.42, 0.86), 0.0, 0.08, 0.18, materials["gold"])
+    nose.rotation_euler.x = math.radians(90)
+    for part in [head, scarf, nose]:
+        part.select_set(True)
+    player.select_set(True)
+    bpy.context.view_layer.objects.active = player
+    bpy.ops.object.join()
+    player = bpy.context.object
+    player.name = "FpeRushPlayer"
     player["fpe_context_props"] = {"Player": 1.0, "Groups": "player_character"}
     player["fpe_character_context_props"] = {
-        "WalkSpeedMultiplier": 0.65,
-        "RunSpeedMultiplier": 0.85,
+        "WalkSpeedMultiplier": 0.72,
+        "RunSpeedMultiplier": 0.92,
         "JumpForceMultiplier": 0.55,
         "FaceMotionDirection": 1.0,
     }
     player["fpe_player_controls_context_props"] = {
-        "ThirdPerson": 1.0,
+        "ThirdPerson": 0.0,
+        "FirstPerson": 0.0,
         "CanHoldItems": 1.0,
         "HoldZoneDistance": 1.05,
         "HoldZoneSize": 0.5,
-        "StandardCameraHeight": 1.15,
-        "StandardCameraDistance": 3.1,
+        "StandardCameraHeight": 1.35,
+        "StandardCameraDistance": 3.4,
     }
     player["fpe_trigger_events_context_props"] = {"TriggerGroups": "player", "TriggerEvents": []}
     return player
@@ -267,11 +336,10 @@ def build_demo(index: int, demo_id: str, title: str, concept: str, accent: tuple
     reset_scene()
     mats = add_base(title, accent)
     commands = {"ActivateCamera": "OverviewCamera"}
-
-    if index in {3, 8, 9, 10, 15}:
-        add_player(mats)
+    add_player(mats)
 
     if demo_id == "02_groups":
+        add_interaction_pedestal(mats)
         for i, x in enumerate([-1.2, 0, 1.2]):
             obj = cube(f"RibbonClub{i+1}", (x, 0, 0.28), (0.42, 0.1, 0.42), mats["accent"])
             obj["fpe_context_props"] = {"Groups": "warm_ribbons,collectibles"}
@@ -286,6 +354,7 @@ def build_demo(index: int, demo_id: str, title: str, concept: str, accent: tuple
         }
         commands = {"DispatchEvent": "WelcomeMatTriggered"}
     elif demo_id == "04_event_commands":
+        add_interaction_pedestal(mats)
         add_camera("DetailCamera", (2.8, -2.4, 1.7), (0.2, 0.0, 0.5))
         speaker = sphere("PostcardBell", (0.9, 0.1, 0.45), 0.22, mats["accent"])
         speaker["fpe_context_props"] = {"Speaker": 1.0, "Groups": "postcard_bell"}
@@ -298,15 +367,18 @@ def build_demo(index: int, demo_id: str, title: str, concept: str, accent: tuple
         }
         commands = {"ActivateCamera": "DetailCamera", "SpeakerTrigger": "PostcardBell", "DispatchEvent": "RouteDelivered"}
     elif demo_id == "05_animations":
+        add_interaction_pedestal(mats)
         bloom = sphere("BloomBud", (0, -0.15, 0.35), 0.25, mats["accent"])
         animate_location(bloom, "Bloom", (0, -0.15, 0.35), (0, -0.15, 1.25))
         commands = {"Animations": "Bloom"}
     elif demo_id == "06_cameras":
+        add_interaction_pedestal(mats)
         cylinder("Teacup", (0, 0, 0.35), 0.48, 0.45, mats["paper"])
         sphere("SteamHeart", (0.32, -0.1, 0.98), 0.13, mats["accent"])
         add_camera("DetailCamera", (1.7, -1.45, 1.15), (0.1, 0.0, 0.55))
         commands = {"ActivateCamera": "DetailCamera"}
     elif demo_id == "07_speakers":
+        add_interaction_pedestal(mats)
         chime = sphere("TinyChimeSpeaker", (0, 0, 0.55), 0.32, mats["accent"])
         chime["fpe_context_props"] = {"Speaker": 1.0}
         chime["fpe_speaker_settings_context_props"] = {
@@ -332,6 +404,7 @@ def build_demo(index: int, demo_id: str, title: str, concept: str, accent: tuple
         keepsake["fpe_inventory_context_props"] = {"InventoryItemKind": "paper_keepsake", "InventoryItemQuantity": 1}
         commands = {"DispatchEvent": "KeepsakeReady"}
     elif demo_id == "11_sub_scenes":
+        add_interaction_pedestal(mats)
         host = cube("SecretNook", (0, 0.15, 0.42), (0.9, 0.6, 0.42), mats["accent"])
         host["fpe_context_props"] = {"SubScene": 1.0, "Groups": "sub_scene_host"}
         host["fpe_sub_scene_context_props"] = {
@@ -363,6 +436,7 @@ def build_demo(index: int, demo_id: str, title: str, concept: str, accent: tuple
         }
         commands = {"DispatchEvent": "PaperButtonPressed"}
     elif demo_id == "15_frame_events":
+        add_interaction_pedestal(mats)
         spark = sphere("ClockworkSpark", (0, -0.15, 0.35), 0.22, mats["accent"])
         animate_location(spark, "SparkTick", (0, -0.15, 0.35), (1.2, -0.15, 0.35))
         commands = {"Animations": "SparkTick"}

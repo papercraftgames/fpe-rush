@@ -20,6 +20,9 @@ var _activate_button: Button
 var _repo_button: Button
 var _gallery_root: Control
 var _open_button: Button
+var _play_hud: Control
+var _hud_title: Label
+var _hud_hint: Label
 var _loading := false
 
 func _ready() -> void:
@@ -29,6 +32,7 @@ func _ready() -> void:
 	_build_interface()
 	_connect_events()
 	_select_demo(0, false)
+	_set_gallery_visible(true)
 
 func _build_world_environment() -> void:
 	var environment_node := WorldEnvironment.new()
@@ -82,6 +86,39 @@ func _build_interface() -> void:
 	_open_button.hide()
 	layer.add_child(_open_button)
 
+	var play_hud := PanelContainer.new()
+	_play_hud = play_hud
+	play_hud.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	play_hud.position = Vector2(-250, -82)
+	play_hud.custom_minimum_size = Vector2(500, 64)
+	play_hud.add_theme_stylebox_override("panel", _panel_style(Color("#49382fe8"), 18, Color("#fff4df44"), 1, 6))
+	layer.add_child(play_hud)
+
+	var play_hud_margin := MarginContainer.new()
+	play_hud_margin.add_theme_constant_override("margin_left", 18)
+	play_hud_margin.add_theme_constant_override("margin_top", 10)
+	play_hud_margin.add_theme_constant_override("margin_right", 18)
+	play_hud_margin.add_theme_constant_override("margin_bottom", 10)
+	play_hud.add_child(play_hud_margin)
+
+	var play_hud_stack := VBoxContainer.new()
+	play_hud_stack.alignment = BoxContainer.ALIGNMENT_CENTER
+	play_hud_stack.add_theme_constant_override("separation", 2)
+	play_hud_margin.add_child(play_hud_stack)
+
+	_hud_title = Label.new()
+	_hud_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hud_title.add_theme_font_size_override("font_size", 15)
+	_hud_title.add_theme_color_override("font_color", Color("#fffaf0"))
+	play_hud_stack.add_child(_hud_title)
+
+	_hud_hint = Label.new()
+	_hud_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hud_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hud_hint.add_theme_font_size_override("font_size", 11)
+	_hud_hint.add_theme_color_override("font_color", Color("#eadbc5"))
+	play_hud_stack.add_child(_hud_hint)
+
 	_gallery_root = MarginContainer.new()
 	_gallery_root.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
 	_gallery_root.offset_left = 12
@@ -134,11 +171,13 @@ func _build_interface() -> void:
 	var close := Button.new()
 	close.text = "×"
 	close.tooltip_text = "Close gallery"
-	close.custom_minimum_size = Vector2(24, 24)
-	close.add_theme_font_size_override("font_size", 14)
+	close.custom_minimum_size = Vector2(32, 32)
+	close.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	close.add_theme_font_size_override("font_size", 16)
 	close.add_theme_color_override("font_color", Color("#49382f"))
-	close.add_theme_stylebox_override("normal", _compact_style(Color("#f1dfc6"), 12, Color("#b99d7d66")))
-	close.add_theme_stylebox_override("hover", _compact_style(Color("#ef9a8f"), 12, Color("#c86352")))
+	close.add_theme_stylebox_override("normal", _compact_style(Color("#f1dfc6"), 16, Color("#b99d7d66")))
+	close.add_theme_stylebox_override("hover", _compact_style(Color("#ef9a8f"), 16, Color("#c86352")))
+	close.add_theme_stylebox_override("pressed", _compact_style(Color("#df8175"), 16, Color("#a94c40")))
 	close.pressed.connect(_set_gallery_visible.bind(false))
 	header.add_child(close)
 
@@ -400,6 +439,7 @@ func _compact_style(color: Color, radius: int, border_color: Color, border_width
 func _set_gallery_visible(is_visible: bool) -> void:
 	_gallery_root.visible = is_visible
 	_open_button.visible = not is_visible
+	_play_hud.visible = not is_visible
 
 func _connect_events() -> void:
 	if FPEEventManager.GLOBAL_INSTANCE and not FPEEventManager.GLOBAL_INSTANCE.fpe_event.is_connected(_on_fpe_event):
@@ -416,6 +456,8 @@ func _select_demo(index: int, load_scene: bool) -> void:
 	_description_label.text = demo.blurb
 	_explanation_label.text = demo.explanation
 	_try_label.text = demo.try_it
+	_hud_title.text = "%s  ·  %s" % [demo.title, demo.concept]
+	_hud_hint.text = "%s  •  H: gallery  •  Enter: activate" % demo.play_hint
 	_metadata_label.text = "BLENDER / GLTF EXTRAS / FPE\n%s\n\nRepo: %s" % [demo.metadata, demo.repo_path]
 	_repo_button.text = "Open %s in repo" % str(demo.repo_path).get_file()
 	for card_index in _cards.size():
