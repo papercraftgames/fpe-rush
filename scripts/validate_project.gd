@@ -24,7 +24,7 @@ func _validate_catalog() -> bool:
 		ok = false
 	var seen := {}
 	for demo in Catalog.DEMOS:
-		for key in ["id", "number", "title", "concept", "blurb", "event", "metadata"]:
+		for key in ["id", "number", "title", "concept", "blurb", "try_it", "event", "metadata"]:
 			if not demo.has(key) or str(demo[key]).is_empty():
 				push_error("Demo is missing %s: %s" % [key, demo])
 				ok = false

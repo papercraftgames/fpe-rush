@@ -12,6 +12,7 @@ var _cards: Array[Button] = []
 var _title_label: Label
 var _concept_label: Label
 var _description_label: Label
+var _try_label: Label
 var _metadata_label: Label
 var _status_label: Label
 var _activate_button: Button
@@ -123,7 +124,7 @@ func _build_interface() -> void:
 	header_copy.add_child(brand)
 
 	var subtitle := Label.new()
-	subtitle.text = "16 tiny field trips"
+	subtitle.text = "16 playable Blender-to-Godot field trips"
 	subtitle.add_theme_font_size_override("font_size", 13)
 	subtitle.add_theme_color_override("font_color", Color("#7d6a5a"))
 	header_copy.add_child(subtitle)
@@ -221,6 +222,47 @@ func _build_interface() -> void:
 	_description_label.add_theme_color_override("font_color", Color("#66564a"))
 	detail.add_child(_description_label)
 
+	var try_panel := PanelContainer.new()
+	try_panel.add_theme_stylebox_override("panel", _panel_style(Color("#fff3d7"), 16, Color("#e0bd68"), 2, 2))
+	detail.add_child(try_panel)
+
+	var try_margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		try_margin.add_theme_constant_override("margin_%s" % side, 14)
+	try_panel.add_child(try_margin)
+
+	var try_stack := VBoxContainer.new()
+	try_stack.add_theme_constant_override("separation", 5)
+	try_margin.add_child(try_stack)
+
+	var try_heading := Label.new()
+	try_heading.text = "TRY THIS"
+	try_heading.add_theme_font_size_override("font_size", 11)
+	try_heading.add_theme_color_override("font_color", Color("#9a6a21"))
+	try_stack.add_child(try_heading)
+
+	_try_label = Label.new()
+	_try_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_try_label.add_theme_font_size_override("font_size", 13)
+	_try_label.add_theme_color_override("font_color", Color("#49382f"))
+	try_stack.add_child(_try_label)
+
+	var controls_panel := PanelContainer.new()
+	controls_panel.add_theme_stylebox_override("panel", _panel_style(Color("#f5e7cf"), 15, Color("#b49b7b66"), 1, 1))
+	detail.add_child(controls_panel)
+
+	var controls_margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		controls_margin.add_theme_constant_override("margin_%s" % side, 12)
+	controls_panel.add_child(controls_margin)
+
+	var controls := Label.new()
+	controls.text = "Move: WASD / arrows  •  Use / pick up: E or click  •  Drop: R  •  Jump: Space  •  Gallery: H  •  Activate selected demo: Enter"
+	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	controls.add_theme_font_size_override("font_size", 12)
+	controls.add_theme_color_override("font_color", Color("#6b584a"))
+	controls_margin.add_child(controls)
+
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	detail.add_child(spacer)
@@ -260,7 +302,6 @@ func _build_interface() -> void:
 	actions.add_child(_activate_button)
 
 	var reset := Button.new()
-	reset.text = "Reset Scene"
 	reset.text = "Reset"
 	reset.custom_minimum_size = Vector2(82, 46)
 	reset.add_theme_font_size_override("font_size", 13)
@@ -269,7 +310,7 @@ func _build_interface() -> void:
 	actions.add_child(reset)
 
 	var footer := Label.new()
-	footer.text = "Close this card to explore. Esc releases the pointer."
+	footer.text = "Close this card to explore the GLB. FPE is loading the authored extras, not a mocked overlay."
 	footer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	footer.add_theme_font_size_override("font_size", 11)
 	footer.add_theme_color_override("font_color", Color("#968273"))
@@ -312,6 +353,7 @@ func _select_demo(index: int, load_scene: bool) -> void:
 	_concept_label.text = demo.concept
 	_concept_label.add_theme_color_override("font_color", demo.accent.darkened(0.28))
 	_description_label.text = demo.blurb
+	_try_label.text = demo.try_it
 	_metadata_label.text = "BLENDER → GLTF EXTRAS → FPE\n%s" % demo.metadata
 	for card_index in _cards.size():
 		_cards[card_index].button_pressed = card_index == index
@@ -361,3 +403,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		if not _gallery_root.visible:
 			_set_gallery_visible(true)
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_H:
+			_set_gallery_visible(not _gallery_root.visible)
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER:
+			_activate_demo()
+			get_viewport().set_input_as_handled()

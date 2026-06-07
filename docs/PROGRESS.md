@@ -2,7 +2,8 @@
 
 ## Current Milestone
 
-The first visual polish pass is published from the Papercraft Games repository.
+The first usability polish pass is implemented locally after the Papercraft
+Games repository transfer.
 
 ## Completed
 
@@ -33,16 +34,22 @@ The first visual polish pass is published from the Papercraft Games repository.
 - Transferred the repository from `resistdesign` to the `papercraftgames`
   organization without losing Pages, the custom domain, HTTPS, issues, or
   Actions history.
+- Added visible "Try this" guidance for all 16 demos, a control reference card,
+  keyboard gallery toggling, and catalog validation for per-demo interaction
+  prompts.
 
 ## Session Handoff
 
 - Date: June 7, 2026
 - Branch: `main`
 - Implementation commit: `e0a4a8d` (`Polish gallery UI and demo presentation`)
+- Local uncommitted polish: demo guidance/control pass in `scripts/main.gd`,
+  `scripts/demo_catalog.gd`, and `scripts/validate_project.gd`.
 - Verified: `./scripts/build_demos.sh`, `./scripts/ci/check.sh`, native 1280x720
   viewport captures with the gallery open and closed, repository transfer, and
   retained GitHub Pages configuration. Deployment run `27103113677` succeeded
-  from `papercraftgames/fpe-rush`.
+  from `papercraftgames/fpe-rush`. Re-ran `./scripts/ci/check.sh` after the
+  local guidance/control pass.
 
 ## Next Action
 
